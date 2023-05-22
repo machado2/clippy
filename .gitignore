@@ -35,3 +35,8 @@ test.*
 
 #npm package-lock to prevent package version shenanigains from greenkeeper
 package-lock.json
+clippy.xml
+docker-compose.yml
+.vscode
+/clippy.yml
+/.env

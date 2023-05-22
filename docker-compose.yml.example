@@ -1,0 +1,9 @@
+version: '3'
+services:
+  clippy:
+    build: .
+    restart: "always"
+    environment:
+      - OPENAI_KEY=sk-*****
+
+

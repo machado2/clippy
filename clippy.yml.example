@@ -1,0 +1,12 @@
+---
+core:
+  username: clippy
+  password: *****
+  owner: sockpuppet7
+  ignoreUsers:
+    - PaulaBean
+  ignoreCategories:
+  cooldownPeriod: 3.6E7
+plugins: 
+  echo: true
+  clippy: true

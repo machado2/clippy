@@ -269,7 +269,7 @@ class Forum extends EventEmitter {
                     'Cookie': cookies
                 }
             });
-            this.socket.on('pong', (data) => this.emit('log', `Ping exchanged with ${data}ms latency`));
+            // this.socket.on('pong', (data) => this.emit('log', `Ping exchanged with ${data}ms latency`));
             this.socket.on('connect', () => this.emit('connect'));
             this.socket.on('disconnect', () => this.emit('disconnect'));
             this.socket.once('connect', () => resolve());
