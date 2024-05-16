@@ -9,6 +9,12 @@ const { NodeHtmlMarkdown } = require('node-html-markdown');
 const fs = require('fs');
 const path = require('path');
 
+const mentionTester = new RegExp(`(^|\\s)@${forum.username}(\\W|$)`, 'i');
+
+function surroundMentionsWithColons(content) {
+    return content.replace(/(^|\W)@([a-zA-Z0-9_-]{1,64})/g, '$1:$2:');
+}
+
 async function moderateContent(content) {
     const response = await openai.createModeration({ input: content });
     const moderation_result = response.data.results[0].flagged;
@@ -23,6 +29,9 @@ async function moderateContent(content) {
 const sysmsgpath = path.join(__dirname, 'system_message.txt');
 
 let system_message = fs.readFileSync(sysmsgpath, 'utf8');
+
+let model = process.env.OPENROUTER_MODEL || "meta-llama/llama-3-70b-instruct";
+let character_limit = process.env.OPENROUTER_CHARACTER_LIMIT || 25000;
 
 const system_message_complement = `
 You're talking in a forum, and your answers should follow the markdown format, without any links or images.
@@ -46,9 +55,7 @@ async function generateContent(messages) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            model: "meta-llama/llama-3-70b-instruct",
-            // model: "openai/gpt-3.5-turbo",
-            // model: "mistralai/mixtral-8x22b",
+            model,
             temperature: 1,
             messages,
         })
@@ -73,7 +80,15 @@ function convertHtmlToMarkdown(htmlString) {
     const nhm = new NodeHtmlMarkdown();
 
     // Convert the HTML string to Markdown
-    const markdown = nhm.translate(htmlString);
+    let markdown = nhm.translate(htmlString);
+
+    // Workaround for tags with alt text starting and ending with a colon
+    markdown = markdown.replace(/!\[(.*?)\]\((.*?)\)/g, (match, altText) => {
+        if (altText.startsWith(":") && altText.endsWith(":")) {
+            return altText;
+        }
+        return match;
+    });
 
     return markdown;
 }
@@ -88,6 +103,23 @@ function convertHtmlToMarkdown(htmlString) {
  * @returns {Plugin} An instance of the Summoner plugin
  */
 module.exports = function clippy(forum, config) {
+
+
+    function count_chars(messages) {
+        let total_chars = 0;
+        for (const m of messages) {
+            total_chars += m.content.length;
+        }
+        return total_chars;
+    }
+
+    function limit_chars(messages, limit) {
+        // remove messages from the beginning until the total length is less than the limit or there is less than 5 messages
+        while (count_chars(messages) > limit && messages.length > 5) {
+            messages.shift();
+        }
+        return messages;
+    }
 
     /**
      * Handle a mention notification.
@@ -110,12 +142,7 @@ module.exports = function clippy(forum, config) {
                 const postAuthor = await forum.User.get(p.authorId);
                 contextPosts.push({ content: p.content, author: postAuthor.username });
             });
-
-            contextPosts = contextPosts.slice(-100);
-            // while (contextPosts.length > 1 && contextPosts.map((p) => p.content).join('\n\n').length > 8000) {
-            // contextPosts.shift();
-            //}
-            let messages = [format_system_message()];
+            let messages = [];
             for (const p of contextPosts) {
                 // name must be ^[a-zA-Z0-9_-]{1,64}$
                 let sanitizedName = p.author.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 64);
@@ -131,7 +158,7 @@ module.exports = function clippy(forum, config) {
 
                 // the command !clearcontext clear the context of the conversation
                 if (p.content.includes("!clearcontext")) {
-                    messages = [format_system_message()];
+                    messages = [];
                 }
 
                 // the command !system_message(<new message>) changes the system message
@@ -139,18 +166,26 @@ module.exports = function clippy(forum, config) {
                 const match = p.content.match(system_message_regex);
                 if (match) {
                     system_message = match[1];
-                    fs.writeFileSync(sysmsgpath, system_message);
-                    messages = [format_system_message()];
+                    messages = [];
                 }
 
             }
-            const response = await generateContent(messages);
+            messages = limit_chars(messages, character_limit);
+            messages.unshift(format_system_message());
+            console.log(`System message = ${system_message}`);
+            console.log(`Number of context messages: ${contextPosts.length}`);
+            console.log(`Post being answered: ${thepost.content}`);
+            console.log(`Characters in context: ${count_chars(messages)}`)
+            let response = await generateContent(messages);
+            console.log(`Response: ${response}`);
             if (!response) {
                 return;
             }
+            response = surroundMentionsWithColons(response);
 
             return forum.Post.reply(notification.topicId, notification.postId, response);
         } catch (err) {
+            console.log(err)
             forum.emit('error', err);
             return Promise.reject(err);
         };
