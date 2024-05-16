@@ -9,8 +9,6 @@ const { NodeHtmlMarkdown } = require('node-html-markdown');
 const fs = require('fs');
 const path = require('path');
 
-const mentionTester = new RegExp(`(^|\\s)@${forum.username}(\\W|$)`, 'i');
-
 function surroundMentionsWithColons(content) {
     return content.replace(/(^|\W)@([a-zA-Z0-9_-]{1,64})/g, '$1:$2:');
 }
