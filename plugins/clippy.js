@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 function surroundMentionsWithColons(content) {
-    return content.replace(/(^|\W)@([a-zA-Z0-9_-]{1,64})/g, '$1:$2:');
+    return content.replace(/(^|\W)(@[a-zA-Z0-9_-]{1,64})/g, '$1:$2:');
 }
 
 async function moderateContent(content) {
