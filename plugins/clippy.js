@@ -164,7 +164,6 @@ module.exports = function clippy(forum, config) {
                 const match = p.content.match(system_message_regex);
                 if (match) {
                     system_message = match[1];
-                    messages = [];
                 }
 
             }
