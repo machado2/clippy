@@ -9,8 +9,8 @@ const { NodeHtmlMarkdown } = require('node-html-markdown');
 const fs = require('fs');
 const path = require('path');
 
-function surroundMentionsWithColons(content) {
-    return content.replace(/(^|\W)(@[a-zA-Z0-9_-]{1,64})/g, '$1:$2:');
+function removeMentions(content) {
+    return content.replace(/(^|\W)(@[a-zA-Z0-9_-]{1,64})/g, '$1$2');
 }
 
 async function moderateContent(content) {
@@ -83,7 +83,7 @@ function convertHtmlToMarkdown(htmlString) {
     // Workaround for tags with alt text starting and ending with a colon
     markdown = markdown.replace(/!\[(.*?)\]\((.*?)\)/g, (match, altText) => {
         if (altText.startsWith(":") && altText.endsWith(":")) {
-            return altText;
+            return altText.substring(1, altText.length - 1);
         }
         return match;
     });
@@ -142,30 +142,42 @@ module.exports = function clippy(forum, config) {
             });
             let messages = [];
             for (const p of contextPosts) {
-                // name must be ^[a-zA-Z0-9_-]{1,64}$
-                let sanitizedName = p.author.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 64);
-                if (sanitizedName.length == 0) {
-                    sanitizedName = 'user';
-                }
-                let role = sanitizedName.toLowerCase().trim() == 'clippy' ? 'assistant' : 'user';
-                messages.push({
-                    role,
-                    name: sanitizedName,
-                    content: convertHtmlToMarkdown(p.content)
-                });
 
-                // the command !clearcontext clear the context of the conversation
-                if (p.content.includes("!clearcontext")) {
-                    messages = [];
-                }
+                // split content into lines
+                let lines = p.content.split('\n');
 
-                // the command !system_message(<new message>) changes the system message
-                const system_message_regex = /!system_message ?\((.*)\)/;
-                const match = p.content.match(system_message_regex);
-                if (match) {
-                    system_message = match[1];
+                // take lines that start with '#'
+                let commands = lines.filter(l => l.trim().startsWith('#'));
+                let text = lines.filter(l => !l.trim().startsWith('#')).join('\n');
+
+                if (text.trim().length > 0) {
+                    let sanitizedName = p.author.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 64);
+                    if (sanitizedName.length == 0) {
+                        sanitizedName = 'user';
+                    }
+                    let role = sanitizedName.toLowerCase().trim() == 'clippy' ? 'assistant' : 'user';
+
+                    messages.push({
+                        role,
+                        name: sanitizedName,
+                        content: convertHtmlToMarkdown(text)
+                    });
                 }
 
+                
+                for (const c of commands) {
+
+                    // the command #clearcontext clear the context of the conversation
+                    if (c.includes("#clearcontext")) {
+                        messages = [];
+                    }
+
+                    // the command #system_message changes the system message
+                    const match = c.match(/#system_message ?\((.*)\)/);
+                    if (match) {
+                        system_message = match[1];
+                    }
+                }
             }
             messages = limit_chars(messages, character_limit);
             messages.unshift(format_system_message());
@@ -178,7 +190,7 @@ module.exports = function clippy(forum, config) {
             if (!response) {
                 return;
             }
-            response = surroundMentionsWithColons(response);
+            response = removeMentions(response);
 
             return forum.Post.reply(notification.topicId, notification.postId, response);
         } catch (err) {
