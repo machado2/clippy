@@ -24,9 +24,24 @@ async function moderateContent(content) {
 
 // system_message is initialized with the contents of the file ../system_message.txt
 
-const sysmsgpath = path.join(__dirname, 'system_message.txt');
+const default_system_message_path = path.join(__dirname, 'system_message.txt');
+let default_system_message = fs.readFileSync(default_system_message_path, 'utf8');
 
-let system_message = fs.readFileSync(sysmsgpath, 'utf8');
+function system_message_filename(topic_id) {
+    return path.join(__dirname, `system_message_${topic_id}.txt`);
+}
+
+function get_system_message(topic_id) {
+    try {
+        return fs.readFileSync(system_message_filename(topic_id), 'utf8');
+    } catch (err) {
+        return default_system_message;
+    }
+}
+
+function set_system_message(topic_id, message) {
+    fs.writeFileSync(system_message_filename(topic_id), message);
+}
 
 let model = process.env.OPENROUTER_MODEL || "meta-llama/llama-3-70b-instruct";
 let character_limit = process.env.OPENROUTER_CHARACTER_LIMIT || 25000;
@@ -37,7 +52,8 @@ All usernames are prefixed with an '@' character.
 
 Your username in the forum is 'clippy'.`;
 
-function format_system_message() {
+function format_system_message(topic_id) {
+    let system_message = get_system_message(topic_id);
     return {
         role: "system",
         content: system_message + '\n' + system_message_complement
@@ -133,7 +149,15 @@ module.exports = function clippy(forum, config) {
             const user = await notification.getUser();
             debug(`clippy responding to ${user.username}`);
 
+            const topic_id = notification.topicId;
+
             const thepost = await forum.Post.get(notification.postId);
+
+            if (thepost.content.includes("#show_system_message")) {
+                const system_message = get_system_message(topic_id);
+                return forum.Post.reply(notification.topicId, notification.postId, "#" + system_message);
+            }
+
             const topic = await forum.Topic.get(notification.topicId);
             let contextPosts = [];
             await topic.getLatestPosts(async (p) => {
@@ -145,11 +169,17 @@ module.exports = function clippy(forum, config) {
 
                 // split content into lines
                 let lines = p.content.split('\n');
-
-                // take lines that start with '#'
-                let commands = lines.filter(l => l.trim().startsWith('#'));
-                let text = lines.filter(l => !l.trim().startsWith('#')).join('\n');
-
+                let commands = [];
+                let text = [];
+                lines.forEach(l => {
+                    if (l.split(' ').some(word => word.startsWith('#'))) {
+                        commands.push(l);
+                    } else {
+                        text.push(l);
+                    }
+                });
+                text = text.join('\n');
+                
                 if (text.trim().length > 0) {
                     let sanitizedName = p.author.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 64);
                     if (sanitizedName.length == 0) {
@@ -164,9 +194,8 @@ module.exports = function clippy(forum, config) {
                     });
                 }
 
-                
+                // commands that affect the history of the conversation that is used as context
                 for (const c of commands) {
-
                     // the command #clearcontext clear the context of the conversation
                     if (c.includes("#clearcontext")) {
                         messages = [];
@@ -175,12 +204,13 @@ module.exports = function clippy(forum, config) {
                     // the command #system_message changes the system message
                     const match = c.match(/#system_message ?\((.*)\)/);
                     if (match) {
-                        system_message = match[1];
-                    }
+                        set_system_message(topic_id, match[1]);
+                    }                    
                 }
             }
+            const system_message = get_system_message(topic_id);
             messages = limit_chars(messages, character_limit);
-            messages.unshift(format_system_message());
+            messages.unshift(format_system_message(topic_id));
             console.log(`System message = ${system_message}`);
             console.log(`Number of context messages: ${contextPosts.length}`);
             console.log(`Post being answered: ${thepost.content}`);

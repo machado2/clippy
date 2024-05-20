@@ -43,3 +43,5 @@ docker-compose.yml
 *.env
 *.yml
 
+
+/plugins/system_message_*.txt
