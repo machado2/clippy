@@ -70,7 +70,8 @@ async function generateContent(messages) {
         },
         body: JSON.stringify({
             model,
-            temperature: 1,
+            temperature: 0.7,
+            presence_penalty: 1.0,
             messages,
         })
     });
@@ -167,14 +168,21 @@ module.exports = function clippy(forum, config) {
             let messages = [];
             for (const p of contextPosts) {
 
+
+                let markdown = convertHtmlToMarkdown(p.content);
+
                 // split content into lines
-                let lines = p.content.split('\n');
+                let lines = markdown.split('\n');
                 let commands = [];
                 let text = [];
                 lines.forEach(l => {
                     if (l.split(' ').some(word => word.startsWith('#'))) {
                         commands.push(l);
                     } else {
+                        if (l.includes("#.")) {
+                            console.log("l  includes #.");
+                            console.log(l);
+                        }
                         text.push(l);
                     }
                 });
@@ -190,7 +198,7 @@ module.exports = function clippy(forum, config) {
                     messages.push({
                         role,
                         name: sanitizedName,
-                        content: convertHtmlToMarkdown(text)
+                        content: text
                     });
                 }
 
