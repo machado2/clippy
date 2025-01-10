@@ -42,8 +42,13 @@ class Clippy:
             logger.error("The comment referenced by the notification wasn't found")
             self.forum.mark_notification_read(notification.nid)
             return
-        history = [system_message] + [_chatmessage(c) for c in comments]
-        answer = self.agent.chat(history, "")
+        history = [system_message]
+        for c in comments:
+            if c.pid == notification.pid:
+                break
+            history.append(_chatmessage(c))
+        message = f"{notification.username} said: {notif_comment.content}"
+        answer = self.agent.chat(history, message)
         self.forum.reply_to_topic(topic.tid, notif_comment.pid, answer)
         self.forum.mark_notification_read(notification.nid)
         
