@@ -16,7 +16,7 @@ class Agent:
         tools = DuckDuckGoSearchToolSpec().to_tool_list()
         tools.append(FunctionTool.from_defaults(fn=self.image_generator.generate_and_upload_image))
         tools.append(FunctionTool.from_defaults(fn=self.ask_image.ask_image))
-        self.agent = ReActAgent.from_tools(tools, max_iterations=30, llm=llm)
+        self.agent = ReActAgent.from_tools(tools, max_iterations=30, llm=llm, verbose=True)
 
     def chat(self, history: List[ChatMessage], text: str) -> str:
         self.agent.chat_history.clear()
