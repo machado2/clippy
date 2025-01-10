@@ -21,7 +21,6 @@ class Agent:
     def chat(self, history: List[ChatMessage], text: str) -> str:
         self.agent.chat_history.clear()
         self.agent.chat_history.extend(history)
-        print(self.agent.chat_history)
         answer: AgentChatResponse = self.agent.chat(text)
         return answer.response
 

@@ -43,8 +43,7 @@ class Clippy:
             self.forum.mark_notification_read(notification.nid)
             return
         history = [system_message] + [_chatmessage(c) for c in comments]
-        message = f"{notification.username} said: {notif_comment.content}"
-        answer = self.agent.chat(history, message)
+        answer = self.agent.chat(history, "")
         self.forum.reply_to_topic(topic.tid, notif_comment.pid, answer)
         self.forum.mark_notification_read(notification.nid)
         
