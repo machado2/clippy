@@ -1,0 +1,7 @@
+html2text
+llama-index
+llama-index-embeddings-huggingface
+llama-index-llms-openrouter
+llama-index-tools-duckduckgo
+requests
+python-socketio
