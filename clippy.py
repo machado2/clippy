@@ -46,9 +46,7 @@ class Clippy:
         answer = self.agent.chat(text_for_agent)
         self.forum.reply_to_topic(topic.tid, notif_comment.pid, answer)
         self.forum.mark_notification_read(notification.nid)
-        self.store.ingest_topic_with_comments(topic.tid, topic.title, comments)
         
-
     def check_notifications(self):
         notifications = [n for n in self.forum.get_notifications() if not n.read]
         for notification in notifications:
