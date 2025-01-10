@@ -36,11 +36,11 @@ class Clippy:
 
         """)
         
+        self.forum.mark_notification_read(notification.nid)
         try:
             notif_comment = [c for c in comments if c.pid == notification.pid][0]
         except:
             logger.error("The comment referenced by the notification wasn't found")
-            self.forum.mark_notification_read(notification.nid)
             return
         history = [system_message]
         for c in comments:
@@ -50,7 +50,6 @@ class Clippy:
         message = f"{notification.username} said: {notif_comment.content}"
         answer = self.agent.chat(history, message)
         self.forum.reply_to_topic(topic.tid, notif_comment.pid, answer)
-        self.forum.mark_notification_read(notification.nid)
         
     def check_notifications(self):
         notifications = [n for n in self.forum.get_notifications() if not n.read]
