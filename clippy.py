@@ -1,9 +1,8 @@
 import logging
 from textwrap import dedent
-from agent import Agent
+from agent import Agent, ChatMessage
 from memory_store import MemoryStore
-from nodebb_lib import Comment, NodeBB, Notification
-from llama_index.core.chat_engine.types import ChatMessage
+from nodebb_lib import Comment, NodeBB, Notification, html_to_markdown
 import globals
 
 logger = logging.getLogger(__name__)
@@ -14,7 +13,7 @@ def _chatmessage(c: Comment) -> ChatMessage:
         return ChatMessage(role="assistant", content=c.content)
     else:
         role = "assistant" if c.user == "clippy" else "user"
-        return ChatMessage(role="user", content=f"{c.user} said: {c.content}")
+        return ChatMessage(role, content=f"{c.user} said: {c.content}")
 
 class Clippy:
     def __init__(self, forum: NodeBB, agent: Agent):
@@ -44,21 +43,16 @@ class Clippy:
             {self.memory.get_data()}
             ```
             """))
-        self.forum.mark_notification_read(notification.nid)
-        try:
-            notif_comment = [c for c in comments if c.pid == notification.pid][0]
-        except:
-            logger.error("The comment referenced by the notification wasn't found")
-            return
+                  
         history = [system_message]
         for c in comments:
             if c.pid == notification.pid:
                 break
             history.append(_chatmessage(c))
-        message = f"{notification.username} said: {notif_comment.content}"
+        message = f"{notification.username} said: {html_to_markdown(notification.body)}"
         globals.current_topic = topic.tid
         answer = self.agent.chat(history, message)
-        self.forum.reply_to_topic(topic.tid, notif_comment.pid, answer)
+        self.forum.reply_to_topic(topic.tid, notification.pid, answer)
         self.summarize_memory_if_necessary()
 
     def summarize_memory_if_necessary(self, max_memory_length=4096, summary_threshold=1000, summarization_prompt="Summarize the following text, focusing on the most important details you are supposed to remember. Be concise:\n```\n{memory}\n```"):
@@ -95,5 +89,7 @@ class Clippy:
     def check_notifications(self):
         notifications = [n for n in self.forum.get_notifications() if not n.read]
         for notification in notifications:
-            self.handle_notification(notification)
+            if notification.type == "mention":
+                self.handle_notification(notification)
+            self.forum.mark_notification_read(notification.nid)
 

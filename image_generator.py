@@ -6,7 +6,8 @@ from horde_sdk.ai_horde_api.apimodels import ImageGenerateAsyncRequest,ImageGene
 from PIL.Image import Image
 import io
 import os
-from globals import current_topic, image_posting_queue
+import globals
+
 class ImageGenerator:
     def __init__(self, forum: NodeBB):
         self.forum = forum
@@ -38,7 +39,7 @@ class ImageGenerator:
         image_data = image_jpeg.read()
         return image_data
 
-    def _generate_and_upload_image(self, tid: int, prompt: str) :
+    def _generate_and_upload_image(self, tid: int, prompt: str):
         """ 
         Generates an image using AI Horde and uploads it to the NodeBB forum.
 
@@ -51,11 +52,12 @@ class ImageGenerator:
         """
         image_data = self.generate_image_with_ai_horde(prompt)
         image_url = self.forum.upload_image(image_data)
-        image_posting_queue.put((tid, image_url, prompt))
+        globals.image_posting_queue.put((tid, image_url, prompt))
     
-    def generate_and_upload_image(self, prompt: str):
+    def generate_and_upload_image(self, prompt: str) -> str:
         """ Generate an image and post it on the current conversation """
-        tid = current_topic
+        tid = globals.current_topic
         if tid is None:
-            return
+            return "error"
         threading.Thread(target=self._generate_and_upload_image, args=(tid, prompt)).start()
+        return "generating image..."

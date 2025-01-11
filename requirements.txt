@@ -1,7 +1,5 @@
 html2text
-llama-index
-llama-index-llms-openrouter
-llama-index-tools-duckduckgo
+openai
 requests
 python-socketio
 horde_sdk

@@ -4,10 +4,10 @@ import time
 from nodebb_lib import NodeBB
 from agent import Agent
 from clippy import Clippy
-from globals import image_posting_queue, new_notification
+import globals
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 forum: NodeBB = NodeBB("https://what.thedailywtf.com", "clippy")
@@ -23,16 +23,16 @@ while True:
         clippy.check_notifications()
         while True:
             for _ in range(30 * 60 // 5):
-                while not image_posting_queue.empty():
-                    tid, image_url, prompt = image_posting_queue.get()
+                while not globals.image_posting_queue.empty():
+                    tid, image_url, prompt = globals.image_posting_queue.get()
                     prompt = prompt.replace('"', '\\"')
                     prompt = prompt.replace("'", "\\'")
                     prompt = prompt.replace("`", "\\`")
                     prompt = prompt.replace("\n", " ")
                     prompt = prompt[:100] + "..." if len(prompt) > 100 else prompt
                     forum.reply_to_topic(tid, None, f"\n![{prompt}]({image_url})")
-                if new_notification.wait(5):
-                    new_notification.clear()
+                if globals.new_notification.wait(5):
+                    globals.new_notification.clear()
                     time.sleep(5)
                     clippy.check_notifications()
             clippy.check_notifications()

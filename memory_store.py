@@ -23,15 +23,16 @@ class MemoryStore:
             return "(nothing stored on persistent memory yet)"
         return self._data
     
-    def replace_memory(self, new_memory: str):
+    def replace_memory(self, new_memory: str) -> str:
         """
         Replaces the entire contents of your persistent memory
         """
         self._data = new_memory
         with open(self._filename, "w", encoding="utf-8") as f:
             f.write(self._data)
+        return "ok"
 
-    def append_to_memory(self, text: str):
+    def append_to_memory(self, text: str) -> str:
         """
         Appends text to the persistent memory
         """
@@ -40,4 +41,5 @@ class MemoryStore:
         self._data = self._data + text
         with open(self._filename, "w", encoding="utf-8") as f:
             f.write(self._data)
+        return "ok"
 

@@ -6,7 +6,7 @@ from polite_web_client import PoliteWebClient, RequestFailedError, DisallowedUrl
 from datetime import datetime
 import socketio
 import time
-from globals import new_notification
+import globals
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ class Notification:
     pid: int
     tid: int
     type: str
+    body: str
     username: str
     datetime: datetime
     read: bool
@@ -227,7 +228,7 @@ class NodeBB:
 
         """
         logger.info(f"New notification arrived: {data}")
-        new_notification.set()
+        globals.new_notification.set()
 
     def create_topic(self, category_id: int, title: str, content: str) -> int:
         """
@@ -430,6 +431,7 @@ class NodeBB:
         url: str = f"{self.base_url}/api/notifications"
         try:
             response = self.client.get(url)
+            logging.info(f"Notifications response: {response.json()}")
             notifications = response.json()['notifications']
             parsed_notifications: List[Notification] = []
             for notification in notifications:
@@ -443,7 +445,8 @@ class NodeBB:
                     username=str(user_obj['username']),
                     type=str(notification['type']),
                     datetime=datetime.fromtimestamp(timestamp),
-                    read=bool(notification['read'])
+                    read=bool(notification['read']),
+                    body=str(notification['bodyLong'])
                 )
                 parsed_notifications.append(parsed_notification)
             return parsed_notifications

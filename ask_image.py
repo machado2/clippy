@@ -35,6 +35,9 @@ class AskImage:
         else:
             response = requests.get(self.base_forum_url + url)
 
+        if response.status_code == 404:
+            return "There is no image at this URL"
+
         if response.status_code != 200:
             raise Exception(f"Failed to download image: {response.status_code}")
 
