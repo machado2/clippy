@@ -109,7 +109,7 @@ class Agent:
             messages.append({"role": h.role, "content": h.content})
         messages.append({"role": "user", "content": text})
 
-        max_iterations = 2
+        max_iterations = 10
 
         for _ in range(max_iterations):
             # Prepare headers and payload for the ChatCompletion endpoint.
@@ -125,7 +125,6 @@ class Agent:
             }
 
             # Make a POST request
-            logger.debug(f"Request payload: {json.dumps(payload, indent=2)}")
             response = requests.post(
                 f"{llm_base_url}/chat/completions",
                 headers=headers,
@@ -137,8 +136,6 @@ class Agent:
                 raise Exception(f"Error from llm API: {response.status_code} - {response.text}")
 
             data = response.json()
-
-            logger.debug(f"Response from LLM: {json.dumps(data, indent=2)}")
 
             # Grab the top choice's message
             msg = data["choices"][0]["message"]
