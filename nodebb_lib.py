@@ -6,6 +6,7 @@ from polite_web_client import PoliteWebClient, RequestFailedError, DisallowedUrl
 from datetime import datetime
 import socketio
 import time
+from globals import new_notification
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,6 @@ class NodeBB:
         self.sio = None  # Placeholder for the SocketIO client
         self.connected = False
         self._websocket_ready = False # Changed from asyncio.Event()
-        self.on_notification: Optional[Callable] = None
         self.csrf_token: str = ""
 
     def login(self, username: str, password: str) -> bool:
@@ -226,9 +226,8 @@ class NodeBB:
         Handles new notification events.
 
         """
-        logger.info(f"New notification: {data}")
-        if self.on_notification:
-            self.on_notification()
+        logger.info(f"New notification arrived: {data}")
+        new_notification.set()
 
     def create_topic(self, category_id: int, title: str, content: str) -> int:
         """
