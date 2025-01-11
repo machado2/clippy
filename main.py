@@ -29,7 +29,7 @@ while True:
                     prompt = prompt.replace("'", "\\'")
                     prompt = prompt.replace("`", "\\`")
                     prompt = prompt.replace("\n", " ")
-                    prompt = prompt[:100] + "..." if len(prompt) > 100 else prompt
+                    prompt = prompt.replace("@", " ")
                     forum.reply_to_topic(tid, None, f"\n![{prompt}]({image_url})")
                 if globals.new_notification.wait(5):
                     globals.new_notification.clear()
