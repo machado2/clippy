@@ -27,8 +27,6 @@ class AskImage:
 
         """
 
-        logger.info(f"Asking {question} about {url}")
-
         # Download the image
         if url.startswith("http"):
             response = requests.get(url)
