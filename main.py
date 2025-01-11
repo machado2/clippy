@@ -22,7 +22,7 @@ while True:
         clippy = Clippy(forum, agent)
         clippy.check_notifications()
         while True:
-            for _ in range(30 * 60 // 5):
+            for _ in range(5 * 60 // 5):
                 while not globals.image_posting_queue.empty():
                     tid, image_url, prompt = globals.image_posting_queue.get()
                     prompt = prompt.replace('"', '\\"')
