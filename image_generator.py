@@ -19,16 +19,25 @@ class ImageGenerator:
             apikey=os.getenv("AI_HORDE_API_KEY"),
             prompt=prompt,
             models=[
-                "AlbedoBase XL (SDXL)"
+                "Flux.1-Schnell fp8 (Compact)"
             ],
             params = ImageGenerationInputPayload(
                 width=1024,
-                height=768,
-                steps=40,
-                cfg_scale=7.5,
-                sampler_name="k_euler_a",
-                n=1
-            )
+                height=1024,
+                steps=4,
+                cfg_scale=1,
+                sampler_name="k_euler",
+                n=1,
+                karras=False,
+                post_processing=[
+                    "RealESRGAN_x2plus"
+                ],
+                clip_skip=1
+            ),
+            nsfw=True,
+            censor_nsfw=False,
+            trusted_workers=True,
+            slow_workers=True,
         ))
         image: Image = self.horde_client.download_image_from_generation(status_response.generations[0])
 
