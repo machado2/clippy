@@ -60,4 +60,4 @@ class ImageGenerator:
         if tid is None:
             return "error"
         threading.Thread(target=self._generate_and_upload_image, args=(tid, prompt)).start()
-        return "generating image..."
+        return "Image is being generated, and I'll post on the forum when it is ready."

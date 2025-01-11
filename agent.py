@@ -187,7 +187,7 @@ class Agent:
                         logger.exception(f"Error calling tool '{function_name}': {e}")
                         tool_result = f"Error calling tool '{function_name}': {e}"
 
-                    logging.info(f"Tool result: {tool_result}")
+                    logger.info(f"Tool result: {tool_result}")
 
                     # Add the function result back into the conversation so the model can see it.
                     messages.append({
