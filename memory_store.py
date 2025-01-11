@@ -24,6 +24,9 @@ class MemoryStore:
         return self._data
     
     def replace_memory(self, new_memory: str):
+        """
+        Replaces the entire contents of your persistent memory
+        """
         self._data = new_memory
         with open(self._filename, "w", encoding="utf-8") as f:
             f.write(self._data)
