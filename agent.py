@@ -148,7 +148,7 @@ class Agent:
                     function_args_json = tool_call["function"].get("arguments", "{}")
                     tool_call_id = tool_call["id"]
 
-                    logging.info(f"Calling tool '{function_name}' with arguments: {function_args_json}")
+                    logger.info(f"Calling tool '{function_name}' with arguments: {function_args_json}")
 
                     # Safely parse the JSON arguments
                     try:

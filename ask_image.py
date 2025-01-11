@@ -77,5 +77,4 @@ class AskImage:
             raise Exception(f"OpenRouter API error: {response.status_code}, {response.text}")
 
         answer = response.json()["choices"][0]["message"]["content"]
-        logging.info(f"Answer from AskImage: {answer}")
         return answer

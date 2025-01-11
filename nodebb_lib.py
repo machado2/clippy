@@ -150,7 +150,6 @@ class NodeBB:
         """
         self.connected = True
         self._websocket_ready = True
-        logger.info("Websocket connected")
 
     def _on_disconnect(self):
         """
@@ -158,7 +157,6 @@ class NodeBB:
         """
         self.connected = False
         self._websocket_ready = False
-        logger.info("Websocket disconnected")
 
     def _on_error(self, data):
         """
@@ -431,7 +429,6 @@ class NodeBB:
         url: str = f"{self.base_url}/api/notifications"
         try:
             response = self.client.get(url)
-            logging.info(f"Notifications response: {response.json()}")
             notifications = response.json()['notifications']
             parsed_notifications: List[Notification] = []
             for notification in notifications:
