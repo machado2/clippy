@@ -1,19 +1,21 @@
 import logging
 from textwrap import dedent
-from agent import Agent, ChatMessage
+
+from llama_cloud import MessageRole
+from agent import Agent
 from memory_store import MemoryStore
 from nodebb_lib import Comment, NodeBB, Notification, html_to_markdown
 import globals
+from llama_index.core.chat_engine.types import ChatMessage
 
 logger = logging.getLogger(__name__)
 
 def _chatmessage(c: Comment) -> ChatMessage:
     if c.user == "clippy":
-        # assistant image, dont include username
-        return ChatMessage(role="assistant", content=c.content)
+        return ChatMessage(role=MessageRole.ASSISTANT, content=c.content)
     else:
-        role = "assistant" if c.user == "clippy" else "user"
-        return ChatMessage(role, content=f"{c.user} said: {c.content}")
+        role = MessageRole.ASSISTANT if c.user == "clippy" else MessageRole.USER
+        return ChatMessage(role=role, content=f"{c.user} said: {c.content}")
 
 class Clippy:
     def __init__(self, forum: NodeBB, agent: Agent):
