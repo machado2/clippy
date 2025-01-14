@@ -7,8 +7,6 @@ from datetime import datetime
 import socketio
 import time
 import globals
-import os
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -59,20 +57,15 @@ class Comment:
 def html_to_markdown(html: str) -> str:
     converter = html2text.HTML2Text()
     converter.ignore_links = False
-    markdown = converter.handle(html)
-    # replace [@username](https://<avatar image>) to just @username
-    markdown = re.sub(r"\[@([^\]]+)\]\(.*?\)", r"@\1", markdown)
-    # replace [:@username:](https://<avatar image>) to just :@username:
-    markdown = re.sub(r"\[:(@[^\]]+):\]\(.*?\)", r":@\1:", markdown)
-    return markdown
-    
+    return converter.handle(html)
+
 class NodeBB:
     """
     A Python class for interacting with a NodeBB forum, using PoliteWebClient
     to respect robots.txt and crawl delays.
     """
 
-    def __init__(self, base_url: str, user_agent: Optional[str] = None, username: str = "clippy", password: str = os.environ["NODEBB_PASSWORD"]):
+    def __init__(self, base_url: str, user_agent: Optional[str] = None, requests_kwargs: Optional[Dict[str, Any]] = None):
         """
         Initializes the NodeBB object.
 
@@ -83,14 +76,13 @@ class NodeBB:
         """
         self.base_url: str = base_url
         self.user_agent: Optional[str] = user_agent
-        self.client: PoliteWebClient = PoliteWebClient(base_url, user_agent=user_agent)
+        self.client: PoliteWebClient = PoliteWebClient(base_url, user_agent=user_agent, requests_kwargs=requests_kwargs)
         self.sio = None  # Placeholder for the SocketIO client
         self.connected = False
         self._websocket_ready = False # Changed from asyncio.Event()
         self.csrf_token: str = ""
-        self._login(username, password)
 
-    def _login(self, username: str, password: str) -> bool:
+    def login(self, username: str, password: str) -> bool:
         """
         Logs in to the NodeBB forum and initializes the websocket connection.
 
@@ -362,18 +354,17 @@ class NodeBB:
             logger.error(f"Error getting recent topics: {e}")
             raise
 
-    def get_comments_at_position(self, topic_slug: str, position: int) -> List[Comment]:
-        """        
-        Retrieves comments from a specific topic at a given position.
+    def get_comments(self, topic: Topic) -> List[Comment]:
+        """
+        Retrieves the data for a specific topic and returns a list of Comment objects.
 
         Args:
-            topic_slug: The slug of the topic.
-            position: The position from which to retrieve comments.
+            topic_id: The ID of the topic.
 
         Returns:
-            A list of Comment objects.
+            A list of Comment objects representing the comments in the topic.
         """
-        url = f"{self.base_url}/api/topic/{topic_slug}/{position}"
+        url: str = f"{self.base_url}/api/topic/{topic.slug}/{topic.postcount}"
         try:
             response = self.client.get(url)
             topic_data = response.json()
@@ -394,29 +385,6 @@ class NodeBB:
         except (RequestFailedError, DisallowedUrlError, ValueError, KeyError, TypeError) as e:
             logger.error(f"Error getting topic: {e}")
             raise
-
-    def get_comments(self, topic: Topic) -> List[Comment]:
-        """
-        Retrieves the data for a specific topic and returns a list of Comment objects.
-
-        Args:
-            topic_id: The ID of the topic.
-
-        Returns:
-            A list of Comment objects representing the comments in the topic.
-        """
-        position = topic.postcount
-        comments = self.get_comments_at_position(topic.slug, position)
-        page_size = len(comments)
-        while len(comments) < 100:
-            position = position - page_size
-            if position < 0:
-                break
-            previous_comments = self.get_comments_at_position(topic.slug, position)
-            if len(previous_comments) > page_size:
-                page_size = len(previous_comments)
-            comments = previous_comments + comments
-        return comments
 
     def get_topic(self, tid: int) -> Topic:
 

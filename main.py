@@ -10,7 +10,8 @@ import globals
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-forum: NodeBB = NodeBB("https://what.thedailywtf.com", "clippy", "clippy", os.environ["NODEBB_PASSWORD"])
+forum: NodeBB = NodeBB("https://what.thedailywtf.com", "clippy")
+forum.login("clippy", os.environ["NODEBB_PASSWORD"])
 
 backoff_delay = 0
 max_backoff = 60 * 60
